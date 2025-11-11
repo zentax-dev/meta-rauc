@@ -305,29 +305,32 @@ def write_manifest(d):
 
         imgtype = slotflags.get('type', 'image')
 
-        if imgtype == 'none':
-            continue
-        elif imgtype == 'image':
-            fallback = "%s%s%s.%s" % (
-                        d.getVar('RAUC_SLOT_%s' % slot),
-                        d.getVar('IMAGE_MACHINE_SUFFIX'),
-                        d.getVar('IMAGE_NAME_SUFFIX'),
-                        slotflags.get('fstype', d.getVar('RAUC_IMAGE_FSTYPE')))
-            imgname = imgsource = slotflags.get('file', fallback)
-        elif imgtype == 'kernel':
-            # TODO: Add image type support
-            fallback = "%s-%s.bin" % ("zImage", machine)
-            imgsource = slotflags.get('file', fallback)
-            imgname = "%s.%s" % (imgsource, "img")
-        elif imgtype == 'boot':
-            imgname = imgsource = slotflags.get('file', 'barebox.img')
-        elif imgtype == 'file':
-            imgsource = slotflags.get('file')
-            if not imgsource:
-                bb.fatal('Image type "file" requires [file] varflag to be set for slot %s' % slot)
-            imgname = "%s.%s" % (imgsource, "img")
-        else:
-            bb.fatal('Unknown image type: %s' % imgtype)
+        match imgtype:
+            case 'image':
+                fallback = "%s%s%s.%s" % (
+                    d.getVar('RAUC_SLOT_%s' % slot),
+                    d.getVar('IMAGE_MACHINE_SUFFIX'),
+                    d.getVar('IMAGE_NAME_SUFFIX'),
+                    slotflags.get('fstype', d.getVar('RAUC_IMAGE_FSTYPE')),
+                )
+                imgname = imgsource = slotflags.get('file', fallback)
+
+            case 'kernel':
+                fallback = "%s-%s.bin" % ("zImage", machine)
+                imgsource = slotflags.get('file', fallback)
+                imgname = "%s.%s" % (imgsource, "img")
+
+            case 'boot':
+                imgname = imgsource = slotflags.get('file', 'barebox.img')
+
+            case 'file':
+                imgsource = slotflags.get('file')
+                if not imgsource:
+                    bb.fatal('Image type "file" requires [file] varflag to be set for slot %s' % slot)
+                imgname = "%s.%s" % (imgsource, "img")
+
+            case _:
+                bb.fatal('Unknown image type: %s' % imgtype)
 
         # Remove the last matching suffix when unpack is set (keep the .img)
         if 'unpack' in slotflags:
